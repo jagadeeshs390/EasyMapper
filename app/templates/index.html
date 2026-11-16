@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyMapper - Nmap WebUI & Security Risk Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b'
+                        },
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                        terminalbg: '#090d16'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for terminal */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .pulse-scanner {
+            animation: radar-sweep 2s infinite linear;
+        }
+        @keyframes radar-sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation / Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white">
+                    <i class="fa-solid fa-radar text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">EasyMapper</span>
+                        <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v1.0 Docker</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">Nmap Network Discovery & Service Security Risk Intelligence</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="scanStatusBadge" class="hidden items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium border bg-slate-800 border-slate-700 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-slate-400" id="scanStatusDot"></span>
+                    <span id="scanStatusText">Idle</span>
+                </div>
+                <a href="#about-modal" onclick="openModal('aboutModal')" class="text-xs text-slate-400 hover:text-white transition flex items-center space-x-1">
+                    <i class="fa-regular fa-circle-question"></i>
+                    <span>Help</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Scan Configuration Panel -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+            <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+            <form id="scanForm" onsubmit="event.preventDefault(); startScan();" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <!-- Target Input -->
+                    <div class="md:col-span-5 space-y-1.5">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                            Target (Domain or IP Address) <span class="text-rose-400">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-crosshairs text-sm"></i>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="targetInput" 
+                                required
+                                placeholder="e.g. scanme.nmap.org or 192.168.1.1" 
+                                class="w-full bg-slate-950/70 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition font-mono"
+                                oninput="updateCommandPreview()"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Scan Type Selector -->
+                    <div class="md:col-span-4 space-y-1.5">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                            Scan Type / Profile
+                        </label>
+                        <div class="relative">
+                            <select 
+                                id="scanTypeSelect" 
+                                class="w-full bg-slate-950/70 border border-slate-700/80 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition cursor-pointer"
+                                onchange="updateCommandPreview()"
+                            >
+                                {% for key, preset in presets.items() %}
+                                    <option value="{{ key }}" {% if key == 'standard' %}selected{% endif %}>
+                                        {{ preset.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Scan Actions -->
+                    <div class="md:col-span-3 flex items-end space-x-2">
+                        <button 
+                            type="submit" 
+                            id="scanBtn"
+                            class="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2 group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <i class="fa-solid fa-play text-xs group-hover:scale-110 transition"></i>
+                            <span id="scanBtnText">Start Scan</span>
+                        </button>
+                        <button 
+                            type="button" 
+                            id="stopBtn"
+                            onclick="stopScan()"
+                            class="hidden bg-rose-600 hover:bg-rose-500 text-white py-2.5 px-3 rounded-xl transition"
+                            title="Stop scan"
+                        >
+                            <i class="fa-solid fa-stop text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Options Toggle -->
+                <div class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <button 
+                        type="button" 
+                        onclick="toggleAdvanced()" 
+                        class="text-slate-400 hover:text-indigo-400 transition flex items-center space-x-1.5"
+                    >
+                        <i class="fa-solid fa-sliders text-xs"></i>
+                        <span>Advanced Options & Custom Ports</span>
+                        <i id="advChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform"></i>
+                    </button>
+
+                    <div class="text-slate-400 text-[11px] flex items-center space-x-1.5">
+                        <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                        <span id="presetDescText">Scans top 1000 ports with service version detection.</span>
+                    </div>
+                </div>
+
+                <!-- Advanced Options Section -->
+                <div id="advancedSection" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-800/60">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-medium text-slate-300">Custom Ports (Overrides default)</label>
+                        <input 
+                            type="text" 
+                            id="customPortsInput" 
+                            placeholder="e.g. 80,443,8000-8080 (Leave blank for preset)" 
+                            class="w-full bg-slate-950/70 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                            oninput="updateCommandPreview()"
+                        >
+                    </div>
+                    <div class="flex items-center space-x-2 sm:pt-5">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                id="skipPingCheckbox" 
+                                class="sr-only peer"
+                                onchange="updateCommandPreview()"
+                            >
+                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                        <span class="text-xs text-slate-300">Skip Host Ping (-Pn) <span class="text-slate-500 text-[11px]">(Treat all hosts as online)</span></span>
+                    </div>
+                </div>
+
+                <!-- Live Command Display Box -->
+                <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5 overflow-x-auto text-xs font-mono text-emerald-400">
+                        <span class="text-slate-500 select-none font-bold">$</span>
+                        <span id="commandPreviewText">nmap -T4 -sV -v &lt;target&gt;</span>
+                    </div>
+                    <button 
+                        type="button" 
+                        onclick="copyCommand()" 
+                        class="text-slate-400 hover:text-white px-2 py-1 text-xs rounded transition flex items-center space-x-1"
+                        title="Copy command"
+                    >
+                        <i class="fa-regular fa-copy"></i>
+                        <span id="copyCmdLabel" class="hidden sm:inline">Copy</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Live Scan Verbose Terminal -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <!-- Terminal Header -->
+            <div class="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="flex space-x-1.5">
+                        <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                    </div>
+                    <span class="text-xs font-mono text-slate-400 pl-2">Live Verbose Output (stdout)</span>
+                </div>
+                <div class="flex items-center space-x-3 text-xs">
+                    <label class="flex items-center space-x-1.5 cursor-pointer text-slate-400 hover:text-slate-300">
+                        <input type="checkbox" id="autoScrollCheck" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+                        <span>Auto-scroll</span>
+                    </label>
+                    <button onclick="clearTerminal()" class="text-slate-400 hover:text-slate-200 transition">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Terminal Body -->
+            <div 
+                id="terminalOutput" 
+                class="bg-[#090d16] font-mono text-xs text-slate-300 p-4 h-64 overflow-y-auto leading-relaxed select-text"
+            >
+                <div class="text-slate-600 italic">Ready. Enter target above and click 'Start Scan' to begin live stream.</div>
+            </div>
+        </div>
+
+        <!-- Results & Security Analysis Section (Hidden until scan finishes or finds ports) -->
+        <div id="resultsSection" class="hidden space-y-6">
+            
+            <!-- Summary Metric Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Target Status</div>
+                    <div class="mt-1 flex items-center space-x-2">
+                        <span id="metricTargetStatus" class="text-lg font-bold text-white">-</span>
+                        <span id="metricHostStateDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                    </div>
+                    <div id="metricTargetAddress" class="text-xs text-slate-500 font-mono truncate mt-0.5">-</div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Open Ports</div>
+                    <div id="metricPortCount" class="mt-1 text-2xl font-bold text-indigo-400">0</div>
+                    <div class="text-xs text-slate-500 mt-0.5">Discovered services</div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Highest Risk</div>
+                    <div id="metricHighestRisk" class="mt-1 text-lg font-bold text-slate-300">-</div>
+                    <div class="text-xs text-slate-500 mt-0.5">Based on exposed surface</div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Detected OS</div>
+                    <div id="metricOS" class="mt-1 text-sm font-semibold text-white truncate">-</div>
+                    <div id="metricScanTime" class="text-xs text-slate-500 mt-0.5">Elapsed: 0s</div>
+                </div>
+            </div>
+
+            <!-- Ports & Security Risk Intelligence Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+                <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-halved text-indigo-400"></i>
+                            <span>Discovered Ports & Security Risk Profile</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            Port functionality, vulnerability risk classifications, and threat vectors.
+                        </p>
+                    </div>
+
+                    <!-- Risk Filter -->
+                    <div class="flex items-center space-x-2 text-xs">
+                        <span class="text-slate-400">Filter Risk:</span>
+                        <select 
+                            id="riskFilter" 
+                            onchange="filterPortsByRisk()" 
+                            class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        >
+                            <option value="ALL">All Levels</option>
+                            <option value="Critical">Critical</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Ports Container / Cards List -->
+                <div id="portsList" class="p-4 sm:p-6 space-y-4">
+                    <!-- Populated via JavaScript -->
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Modal for Detailed Port Threat Modeling & Hardening -->
+    <div id="exploitModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 max-w-2xl w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+                <div class="flex items-center space-x-3">
+                    <span id="modalRiskBadge" class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider"></span>
+                    <div>
+                        <h3 id="modalPortTitle" class="text-base font-bold text-white">Port Analysis</h3>
+                        <p id="modalServiceSubtitle" class="text-xs text-slate-400 font-mono"></p>
+                    </div>
+                </div>
+                <button onclick="closeModal('exploitModal')" class="text-slate-400 hover:text-white transition p-1 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 text-sm">
+                <!-- Port Purpose -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-circle-nodes"></i>
+                        <span>Port Purpose & Standard Usage</span>
+                    </h4>
+                    <p id="modalPortUsage" class="text-slate-300 text-xs leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80"></p>
+                </div>
+
+                <!-- Threat Vectors: How It Can Be Exploited -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-1.5 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>How This Exposed Port Can Be Exploited (Theoretical Attack Vectors)</span>
+                    </h4>
+                    <p id="modalRiskExplanation" class="text-xs text-slate-400 mb-2 italic"></p>
+                    <ul id="modalExploitVectors" class="space-y-2 text-xs text-slate-300">
+                        <!-- List populated via JS -->
+                    </ul>
+                </div>
+
+                <!-- Defensive Remediation & Hardening -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-shield-check"></i>
+                        <span>Defensive Hardening & Remediation Steps</span>
+                    </h4>
+                    <ul id="modalRemediation" class="space-y-2 text-xs text-slate-300">
+                        <!-- List populated via JS -->
+                    </ul>
+                </div>
+
+                <!-- NSE Script Output if present -->
+                <div id="modalScriptsContainer" class="hidden">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-1 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-terminal"></i>
+                        <span>Nmap NSE Script & Vulnerability Output</span>
+                    </h4>
+                    <pre id="modalScriptsOutput" class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-amber-300 whitespace-pre-wrap max-h-40 overflow-y-auto"></pre>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
+                <button onclick="closeModal('exploitModal')" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2 rounded-xl transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help / About Modal -->
+    <div id="aboutModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 max-w-lg w-full rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-question text-indigo-400"></i>
+                    <span>About EasyMapper</span>
+                </h3>
+                <button onclick="closeModal('aboutModal')" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+                <p><strong>EasyMapper</strong> is a lightweight, containerized WebUI for Nmap with integrated security risk intelligence.</p>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                    <p class="font-semibold text-slate-200">Key Features:</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-400">
+                        <li>Real-time live verbose console streaming via SSE.</li>
+                        <li>Configurable scan profiles (Quick, Version, OS detection, Aggressive, Vuln script).</li>
+                        <li>Dynamic command builder showing the exact Nmap command used.</li>
+                        <li>Automatic risk ratings (Low, Medium, High, Critical) for discovered open ports.</li>
+                        <li>Theoretical threat vectors & defensive hardening recommendations.</li>
+                    </ul>
+                </div>
+                <p class="text-slate-400 italic">Notice: Only scan networks, domains, and systems you own or have explicit authorization to audit.</p>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeModal('aboutModal')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-xl transition">
+                    Understood
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            EasyMapper &bull; Dockerized Network Scanner &bull; Authorized Security Auditing
+        </div>
+    </footer>
+
+    <!-- Frontend Logic -->
+    <script>
+        const PRESETS_META = {
+            "quick": { desc: "Scans top 100 most common ports rapidly.", flags: ["-T4", "-F", "-v"] },
+            "standard": { desc: "Scans top 1000 ports with service version detection.", flags: ["-T4", "-sV", "-v"] },
+            "os_detect": { desc: "Determines target operating system, open ports, and running service versions.", flags: ["-T4", "-sV", "-O", "-v"] },
+            "aggressive": { desc: "Enables OS detection, version scanning, script scanning, and traceroute.", flags: ["-T4", "-A", "-v"] },
+            "vuln": { desc: "Runs Nmap's vulnerability detection scripts against open services.", flags: ["-T4", "-sV", "--script=vuln", "-v"] },
+            "full": { desc: "Exhaustive sweep across all 65,535 TCP ports with version detection.", flags: ["-T4", "-p-", "-sV", "-v"] },
+            "pingless": { desc: "Bypasses host discovery (useful for targets blocking ICMP ping).", flags: ["-Pn", "-T4", "-sV", "-v"] }
+        };
+
+        let activeEventSource = null;
+        let lastReportData = null;
+
+        function toggleAdvanced() {
+            const adv = document.getElementById("advancedSection");
+            const icon = document.getElementById("advChevron");
+            if (adv.classList.contains("hidden")) {
+                adv.classList.remove("hidden");
+                icon.classList.add("rotate-180");
+            } else {
+                adv.classList.add("hidden");
+                icon.classList.remove("rotate-180");
+            }
+        }
+
+        function updateCommandPreview() {
+            const target = document.getElementById("targetInput").value.trim() || "<target>";
+            const scanType = document.getElementById("scanTypeSelect").value;
+            const skipPing = document.getElementById("skipPingCheckbox").checked;
+            const customPorts = document.getElementById("customPortsInput").value.trim();
+
+            const preset = PRESETS_META[scanType] || PRESETS_META["standard"];
+            document.getElementById("presetDescText").innerText = preset.desc;
+
+            let flags = [...preset.flags];
+            if (skipPing && !flags.includes("-Pn")) {
+                flags.unshift("-Pn");
+            }
+            if (customPorts) {
+                flags = flags.filter(f => f !== "-F" && f !== "-p-");
+                flags.push(`-p ${customPorts}`);
+            }
+
+            const fullCmd = `nmap ${flags.join(" ")} ${target}`;
+            document.getElementById("commandPreviewText").innerText = fullCmd;
+        }
+
+        function copyCommand() {
+            const cmd = document.getElementById("commandPreviewText").innerText;
+            navigator.clipboard.writeText(cmd);
+            const label = document.getElementById("copyCmdLabel");
+            const old = label.innerText;
+            label.innerText = "Copied!";
+            setTimeout(() => label.innerText = old, 1500);
+        }
+
+        function clearTerminal() {
+            document.getElementById("terminalOutput").innerHTML = '<div class="text-slate-600 italic">Console cleared.</div>';
+        }
+
+        function appendLog(line) {
+            const term = document.getElementById("terminalOutput");
+            const el = document.createElement("div");
+            el.className = "py-0.5";
+            
+            // Highlight common nmap keywords
+            if (line.includes("Discovered open port") || line.includes("open")) {
+                el.className += " text-emerald-400 font-semibold";
+            } else if (line.toLowerCase().includes("error") || line.toLowerCase().includes("failed")) {
+                el.className += " text-rose-400";
+            } else if (line.includes("NSE:") || line.includes("Scanning")) {
+                el.className += " text-indigo-300";
+            } else if (line.includes("Initiating") || line.includes("Completed")) {
+                el.className += " text-cyan-300";
+            }
+
+            el.textContent = line;
+            term.appendChild(el);
+
+            if (document.getElementById("autoScrollCheck").checked) {
+                term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        function setStatus(state, message) {
+            const badge = document.getElementById("scanStatusBadge");
+            const dot = document.getElementById("scanStatusDot");
+            const text = document.getElementById("scanStatusText");
+            const scanBtn = document.getElementById("scanBtn");
+            const scanBtnText = document.getElementById("scanBtnText");
+            const stopBtn = document.getElementById("stopBtn");
+
+            badge.classList.remove("hidden", "flex");
+            badge.classList.add("flex");
+
+            if (state === "scanning") {
+                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+                text.innerText = message || "Scanning...";
+                scanBtn.disabled = true;
+                scanBtnText.innerText = "Scanning...";
+                stopBtn.classList.remove("hidden");
+            } else if (state === "finished") {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                text.innerText = message || "Finished";
+                scanBtn.disabled = false;
+                scanBtnText.innerText = "Start Scan";
+                stopBtn.classList.add("hidden");
+            } else if (state === "error") {
+                dot.className = "w-2 h-2 rounded-full bg-rose-500";
+                text.innerText = message || "Error";
+                scanBtn.disabled = false;
+                scanBtnText.innerText = "Start Scan";
+                stopBtn.classList.add("hidden");
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-slate-400";
+                text.innerText = "Idle";
+                scanBtn.disabled = false;
+                scanBtnText.innerText = "Start Scan";
+                stopBtn.classList.add("hidden");
+            }
+        }
+
+        function startScan() {
+            const target = document.getElementById("targetInput").value.trim();
+            if (!target) return;
+
+            const scanType = document.getElementById("scanTypeSelect").value;
+            const skipPing = document.getElementById("skipPingCheckbox").checked;
+            const customPorts = document.getElementById("customPortsInput").value.trim();
+
+            if (activeEventSource) {
+                activeEventSource.close();
+            }
+
+            clearTerminal();
+            setStatus("scanning", "Scanning Target...");
+
+            const params = new URLSearchParams({
+                target: target,
+                scan_type: scanType,
+                skip_ping: skipPing,
+                custom_ports: customPorts
+            });
+
+            appendLog(`[EasyMapper] Connecting to scan stream for target: ${target}...`);
+
+            activeEventSource = new EventSource(`/api/scan/stream?${params.toString()}`);
+
+            activeEventSource.addEventListener("start", (e) => {
+                const data = JSON.parse(e.data);
+                appendLog(`[EasyMapper] Command initiated: ${data.command}`);
+                appendLog(`[EasyMapper] Target: ${data.target} | Profile: ${data.scan_type}`);
+                appendLog(`--------------------------------------------------------------------------------`);
+            });
+
+            activeEventSource.addEventListener("log", (e) => {
+                const data = JSON.parse(e.data);
+                appendLog(data.line);
+            });
+
+            activeEventSource.addEventListener("result", (e) => {
+                const data = JSON.parse(e.data);
+                lastReportData = data;
+                renderReport(data);
+            });
+
+            activeEventSource.addEventListener("error", (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    appendLog(`[ERROR] ${data.error}`);
+                } catch {
+                    appendLog(`[EasyMapper] Stream ended or connection closed.`);
+                }
+                setStatus("error", "Failed");
+                if (activeEventSource) {
+                    activeEventSource.close();
+                    activeEventSource = null;
+                }
+            });
+
+            activeEventSource.addEventListener("end", (e) => {
+                appendLog(`[EasyMapper] Scan task completed.`);
+                setStatus("finished", "Completed");
+                if (activeEventSource) {
+                    activeEventSource.close();
+                    activeEventSource = null;
+                }
+            });
+        }
+
+        function stopScan() {
+            if (activeEventSource) {
+                activeEventSource.close();
+                activeEventSource = null;
+                appendLog(`[EasyMapper] Scan aborted by user.`);
+                setStatus("finished", "Aborted");
+            }
+        }
+
+        function renderReport(data) {
+            const resultsSection = document.getElementById("resultsSection");
+            resultsSection.classList.remove("hidden");
+
+            if (!data.hosts || data.hosts.length === 0) {
+                document.getElementById("metricTargetStatus").innerText = "Down / No Response";
+                document.getElementById("metricHostStateDot").className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                document.getElementById("metricPortCount").innerText = "0";
+                document.getElementById("portsList").innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-circle-exclamation text-3xl text-amber-500 mb-2"></i>
+                        <p class="font-semibold text-white">No active open ports discovered or host is down.</p>
+                        <p class="text-xs text-slate-500 mt-1">If the target blocks ICMP ping requests, try enabling 'Skip Host Ping (-Pn)'.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const host = data.hosts[0];
+            document.getElementById("metricTargetStatus").innerText = host.state.toUpperCase();
+            document.getElementById("metricHostStateDot").className = host.state === "up" ? "w-2.5 h-2.5 rounded-full bg-emerald-400" : "w-2.5 h-2.5 rounded-full bg-rose-500";
+            
+            const addr = (host.addresses && host.addresses.length > 0) ? host.addresses[0].addr : data.target;
+            const hostname = (host.hostnames && host.hostnames.length > 0) ? `(${host.hostnames[0]})` : "";
+            document.getElementById("metricTargetAddress").innerText = `${addr} ${hostname}`;
+
+            const ports = host.open_ports || [];
+            document.getElementById("metricPortCount").innerText = ports.length;
+
+            // Elapsed time
+            const elapsed = data.scan_stats ? data.scan_stats.elapsed : "0";
+            document.getElementById("metricScanTime").innerText = `Elapsed: ${elapsed}s`;
+
+            // OS Detection
+            if (host.os_matches && host.os_matches.length > 0) {
+                const topOS = host.os_matches[0];
+                document.getElementById("metricOS").innerText = `${topOS.name} (${topOS.accuracy}%)`;
+            } else {
+                document.getElementById("metricOS").innerText = "Not Identified";
+            }
+
+            // Highest risk calculation
+            const riskHierarchy = { "Critical": 4, "High": 3, "Medium": 2, "Low": 1, "None": 0 };
+            let highestRisk = "Low";
+            let highestVal = 0;
+
+            ports.forEach(p => {
+                const r = (p.security && p.security.risk) || "Low";
+                if (riskHierarchy[r] > highestVal) {
+                    highestVal = riskHierarchy[r];
+                    highestRisk = r;
+                }
+            });
+
+            const highestRiskEl = document.getElementById("metricHighestRisk");
+            highestRiskEl.innerText = ports.length > 0 ? highestRisk : "None";
+            highestRiskEl.className = `mt-1 text-lg font-bold ${getRiskTextColor(highestRisk)}`;
+
+            renderPortCards(ports);
+        }
+
+        function getRiskBadge(risk) {
+            switch ((risk || "").toLowerCase()) {
+                case "critical":
+                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30">Critical Risk</span>';
+                case "high":
+                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-orange-500/10 text-orange-400 border border-orange-500/30">High Risk</span>';
+                case "medium":
+                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">Medium Risk</span>';
+                case "low":
+                default:
+                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Low Risk</span>';
+            }
+        }
+
+        function getRiskTextColor(risk) {
+            switch ((risk || "").toLowerCase()) {
+                case "critical": return "text-rose-400";
+                case "high": return "text-orange-400";
+                case "medium": return "text-amber-400";
+                default: return "text-emerald-400";
+            }
+        }
+
+        function renderPortCards(ports) {
+            const container = document.getElementById("portsList");
+            container.innerHTML = "";
+
+            if (!ports || ports.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-slate-400 text-xs">
+                        No open ports were detected during this scan.
+                    </div>
+                `;
+                return;
+            }
+
+            ports.forEach((p, idx) => {
+                const sec = p.security || {};
+                const serviceDisplay = [p.product, p.version].filter(Boolean).join(" ") || p.service || "unknown";
+
+                const card = document.createElement("div");
+                card.className = "bg-slate-950/60 border border-slate-800 hover:border-slate-700/80 rounded-xl p-4 transition port-card";
+                card.dataset.risk = sec.risk || "Low";
+
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex flex-col items-center justify-center font-mono">
+                                <span class="text-sm font-bold text-white">${p.port}</span>
+                                <span class="text-[10px] text-slate-500 uppercase">${p.protocol}</span>
+                            </div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm font-semibold text-white">${sec.service || p.service}</span>
+                                    <span class="text-xs text-slate-400 font-mono">${serviceDisplay}</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-0.5 line-clamp-1">${sec.description || 'Open port detected on network interface.'}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-3 self-end sm:self-center">
+                            <div>${getRiskBadge(sec.risk)}</div>
+                            <button 
+                                onclick="openPortDetails(${idx})" 
+                                class="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-xs px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 font-medium cursor-pointer"
+                            >
+                                <i class="fa-solid fa-shield-virus text-xs"></i>
+                                <span>Exploitation & Risk Info</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function filterPortsByRisk() {
+            const filter = document.getElementById("riskFilter").value;
+            const cards = document.querySelectorAll(".port-card");
+            cards.forEach(card => {
+                if (filter === "ALL" || card.dataset.risk.toLowerCase() === filter.toLowerCase()) {
+                    card.classList.remove("hidden");
+                } else {
+                    card.classList.add("hidden");
+                }
+            });
+        }
+
+        function openPortDetails(index) {
+            if (!lastReportData || !lastReportData.hosts || !lastReportData.hosts[0]) return;
+            const port = lastReportData.hosts[0].open_ports[index];
+            if (!port) return;
+
+            const sec = port.security || {};
+            const serviceDisplay = [port.product, port.version].filter(Boolean).join(" ") || port.service;
+
+            document.getElementById("modalPortTitle").innerText = `Port ${port.port}/${port.protocol} - ${sec.service || port.service}`;
+            document.getElementById("modalServiceSubtitle").innerText = `Service Banner: ${serviceDisplay || "Unknown"}`;
+            
+            // Risk Badge
+            const badgeEl = document.getElementById("modalRiskBadge");
+            badgeEl.className = `px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getRiskBadgeClass(sec.risk)}`;
+            badgeEl.innerText = `${sec.risk || 'Low'} Risk`;
+
+            // Purpose
+            document.getElementById("modalPortUsage").innerText = sec.description || "General network communication port.";
+
+            // Risk Explanation & Exploit Vectors
+            document.getElementById("modalRiskExplanation").innerText = sec.risk_explanation || "Potential security implications based on default port characteristics.";
+            
+            const vectorsList = document.getElementById("modalExploitVectors");
+            vectorsList.innerHTML = "";
+            (sec.exploit_vectors || ["Potential service misconfiguration or unpatched version vulnerabilities."]).forEach(v => {
+                const li = document.createElement("li");
+                li.className = "flex items-start space-x-2";
+                li.innerHTML = `<i class="fa-solid fa-angle-right text-rose-400 mt-0.5"></i><span>${v}</span>`;
+                vectorsList.appendChild(li);
+            });
+
+            // Remediation
+            const remList = document.getElementById("modalRemediation");
+            remList.innerHTML = "";
+            (sec.remediation || ["Restrict port access via firewall to authorized IPs."]).forEach(r => {
+                const li = document.createElement("li");
+                li.className = "flex items-start space-x-2";
+                li.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span>${r}</span>`;
+                remList.appendChild(li);
+            });
+
+            // Scripts
+            const scriptsBox = document.getElementById("modalScriptsContainer");
+            const scriptsOutput = document.getElementById("modalScriptsOutput");
+            if (port.scripts && port.scripts.length > 0) {
+                scriptsBox.classList.remove("hidden");
+                scriptsOutput.textContent = port.scripts.map(s => `[${s.id}]\n${s.output}`).join("\n\n");
+            } else {
+                scriptsBox.classList.add("hidden");
+                scriptsOutput.textContent = "";
+            }
+
+            openModal("exploitModal");
+        }
+
+        function getRiskBadgeClass(risk) {
+            switch ((risk || "").toLowerCase()) {
+                case "critical": return "bg-rose-500/20 text-rose-400 border border-rose-500/40";
+                case "high": return "bg-orange-500/20 text-orange-400 border border-orange-500/40";
+                case "medium": return "bg-amber-500/20 text-amber-400 border border-amber-500/40";
+                default: return "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove("hidden");
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add("hidden");
+        }
+
+        // Initialize preview on load
+        window.addEventListener("DOMContentLoaded", () => {
+            updateCommandPreview();
+        });
+    </script>
+</body>
+</html>

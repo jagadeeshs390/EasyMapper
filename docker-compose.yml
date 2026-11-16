@@ -1,0 +1,14 @@
+services:
+  easymapper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: easymapper
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    environment:
+      - PYTHONUNBUFFERED=1
