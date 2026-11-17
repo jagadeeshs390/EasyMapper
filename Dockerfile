@@ -3,7 +3,8 @@ FROM python:3.11-slim-bookworm
 
 # Prevent Python from writing .pyc files and enable unbuffered logging
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 # Install nmap, ca-certificates, and cleanup apt caches
 RUN apt-get update && apt-get install -y --no-install-recommends \
