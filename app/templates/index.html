@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EasyMapper - Nmap WebUI & Security Risk Intelligence</title>
+    <title>EasyMapper — Nmap web console</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
@@ -12,16 +12,13 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#1e1b4b'
-                        },
-                        darkbg: '#0f172a',
-                        cardbg: '#1e293b',
-                        terminalbg: '#090d16'
+                        canvas: '#0b0c0e',
+                        panel: '#121316',
+                        sunken: '#0a0b0c',
+                        line: '#25272b',
+                        ink: '#e8e9eb',
+                        muted: '#8b9199',
+                        faint: '#60676f'
                     }
                 }
             }
@@ -34,14 +31,14 @@
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #090d16;
+            background: #08090a;
         }
         ::-webkit-scrollbar-thumb {
-            background: #334155;
+            background: #2a2d31;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
+            background: #3a3e43;
         }
         .pulse-scanner {
             animation: radar-sweep 2s infinite linear;
@@ -52,29 +49,29 @@
         }
     </style>
 </head>
-<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+<body class="bg-canvas text-ink min-h-screen flex flex-col font-sans selection:bg-slate-700 selection:text-ink">
 
     <!-- Top Navigation / Header -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <header class="border-b border-line bg-panel sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white">
-                    <i class="fa-solid fa-radar text-lg"></i>
+                <div class="w-10 h-10 rounded-xl bg-sunken border border-line flex items-center justify-center text-slate-300">
+                    <i class="fa-solid fa-satellite-dish text-lg"></i>
                 </div>
                 <div>
                     <div class="flex items-center space-x-2">
-                        <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">EasyMapper</span>
-                        <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v1.0 Docker</span>
+                        <span class="text-xl font-bold tracking-tight text-ink">EasyMapper</span>
+                        <span class="px-2 py-0.5 text-xs font-medium text-faint">v1.0 · Docker</span>
                     </div>
-                    <p class="text-xs text-slate-400 hidden sm:block">Nmap Network Discovery & Service Security Risk Intelligence</p>
+                    <p class="text-xs text-muted hidden sm:block">Nmap network discovery &amp; service risk</p>
                 </div>
             </div>
             <div class="flex items-center space-x-4">
-                <div id="scanStatusBadge" class="hidden items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium border bg-slate-800 border-slate-700 text-slate-300">
+                <div id="scanStatusBadge" class="hidden items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium border border-transparent text-muted">
                     <span class="w-2 h-2 rounded-full bg-slate-400" id="scanStatusDot"></span>
                     <span id="scanStatusText">Idle</span>
                 </div>
-                <a href="#about-modal" onclick="openModal('aboutModal')" class="text-xs text-slate-400 hover:text-white transition flex items-center space-x-1">
+                <a href="#about-modal" onclick="openModal('aboutModal')" class="text-xs text-muted hover:text-ink transition flex items-center space-x-1">
                     <i class="fa-regular fa-circle-question"></i>
                     <span>Help</span>
                 </a>
@@ -86,18 +83,17 @@
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         <!-- Scan Configuration Panel -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="bg-panel border border-line rounded-2xl p-5 relative overflow-hidden">
 
             <form id="scanForm" onsubmit="event.preventDefault(); startScan();" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
                     <!-- Target Input -->
                     <div class="md:col-span-5 space-y-1.5">
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                            Target (Domain or IP Address) <span class="text-rose-400">*</span>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-muted">
+                            Target (Domain or IP Address) <span class="text-[#c07263]">*</span>
                         </label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted">
                                 <i class="fa-solid fa-crosshairs text-sm"></i>
                             </div>
                             <input 
@@ -105,7 +101,7 @@
                                 id="targetInput" 
                                 required
                                 placeholder="e.g. scanme.nmap.org or 192.168.1.1" 
-                                class="w-full bg-slate-950/70 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition font-mono"
+                                class="w-full bg-sunken border border-line/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-ink placeholder-faint focus:outline-none focus:ring-2 focus:ring-slate-500/40 focus:border-slate-500 transition font-mono"
                                 oninput="updateCommandPreview()"
                             >
                         </div>
@@ -113,13 +109,13 @@
 
                     <!-- Scan Type Selector -->
                     <div class="md:col-span-4 space-y-1.5">
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-muted">
                             Scan Type / Profile
                         </label>
                         <div class="relative">
                             <select 
                                 id="scanTypeSelect" 
-                                class="w-full bg-slate-950/70 border border-slate-700/80 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition cursor-pointer"
+                                class="w-full bg-sunken border border-line/80 rounded-xl px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-slate-500/40 focus:border-slate-500 transition cursor-pointer"
                                 onchange="updateCommandPreview()"
                             >
                                 {% for key, preset in presets.items() %}
@@ -136,7 +132,7 @@
                         <button 
                             type="submit" 
                             id="scanBtn"
-                            class="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2 group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="flex-1 bg-[#e3e5e8] hover:bg-white text-[#0b0c0e] font-semibold py-2.5 px-4 rounded-xl transition flex items-center justify-center space-x-2 group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <i class="fa-solid fa-play text-xs group-hover:scale-110 transition"></i>
                             <span id="scanBtnText">Start Scan</span>
@@ -145,7 +141,7 @@
                             type="button" 
                             id="stopBtn"
                             onclick="stopScan()"
-                            class="hidden bg-rose-600 hover:bg-rose-500 text-white py-2.5 px-3 rounded-xl transition"
+                            class="hidden bg-[#a8442e] hover:bg-[#b9553f] text-ink py-2.5 px-3 rounded-xl transition"
                             title="Stop scan"
                         >
                             <i class="fa-solid fa-stop text-sm"></i>
@@ -154,32 +150,32 @@
                 </div>
 
                 <!-- Advanced Options Toggle -->
-                <div class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="pt-2 border-t border-line/80 flex flex-wrap items-center justify-between gap-3 text-xs">
                     <button 
                         type="button" 
                         onclick="toggleAdvanced()" 
-                        class="text-slate-400 hover:text-indigo-400 transition flex items-center space-x-1.5"
+                        class="text-muted hover:text-ink transition flex items-center space-x-1.5"
                     >
                         <i class="fa-solid fa-sliders text-xs"></i>
                         <span>Advanced Options & Custom Ports</span>
                         <i id="advChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform"></i>
                     </button>
 
-                    <div class="text-slate-400 text-[11px] flex items-center space-x-1.5">
-                        <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                    <div class="text-muted text-[11px] flex items-center space-x-1.5">
+                        <i class="fa-solid fa-circle-info text-faint"></i>
                         <span id="presetDescText">Scans top 1000 ports with service version detection.</span>
                     </div>
                 </div>
 
                 <!-- Advanced Options Section -->
-                <div id="advancedSection" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-800/60">
+                <div id="advancedSection" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-line/60">
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-300">Custom Ports (Overrides default)</label>
                         <input 
                             type="text" 
                             id="customPortsInput" 
                             placeholder="e.g. 80,443,8000-8080 (Leave blank for preset)" 
-                            class="w-full bg-slate-950/70 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                            class="w-full bg-sunken border border-line/80 rounded-lg px-3 py-1.5 text-xs text-ink placeholder-faint focus:outline-none focus:ring-1 focus:ring-slate-500/40 font-mono"
                             oninput="updateCommandPreview()"
                         >
                     </div>
@@ -191,22 +187,22 @@
                                 class="sr-only peer"
                                 onchange="updateCommandPreview()"
                             >
-                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-300"></div>
                         </label>
-                        <span class="text-xs text-slate-300">Skip Host Ping (-Pn) <span class="text-slate-500 text-[11px]">(Treat all hosts as online)</span></span>
+                        <span class="text-xs text-slate-300">Skip Host Ping (-Pn) <span class="text-faint text-[11px]">(Treat all hosts as online)</span></span>
                     </div>
                 </div>
 
                 <!-- Live Command Display Box -->
-                <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 flex items-center justify-between">
-                    <div class="flex items-center space-x-2.5 overflow-x-auto text-xs font-mono text-emerald-400">
-                        <span class="text-slate-500 select-none font-bold">$</span>
+                <div class="bg-sunken rounded-xl p-3 border border-line flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5 overflow-x-auto text-xs font-mono text-[#6fa87f]">
+                        <span class="text-faint select-none font-bold">$</span>
                         <span id="commandPreviewText">nmap -T4 -sV -v &lt;target&gt;</span>
                     </div>
                     <button 
                         type="button" 
                         onclick="copyCommand()" 
-                        class="text-slate-400 hover:text-white px-2 py-1 text-xs rounded transition flex items-center space-x-1"
+                        class="text-muted hover:text-ink px-2 py-1 text-xs rounded transition flex items-center space-x-1"
                         title="Copy command"
                     >
                         <i class="fa-regular fa-copy"></i>
@@ -217,23 +213,18 @@
         </div>
 
         <!-- Live Scan Verbose Terminal -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <div class="bg-panel border border-line rounded-2xl overflow-hidden flex flex-col">
             <!-- Terminal Header -->
-            <div class="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+            <div class="bg-sunken px-4 py-2.5 border-b border-line flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <div class="flex space-x-1.5">
-                        <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
-                        <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
-                        <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
-                    </div>
-                    <span class="text-xs font-mono text-slate-400 pl-2">Live Verbose Output (stdout)</span>
+                    <span class="text-xs font-mono text-faint">Live verbose output</span>
                 </div>
                 <div class="flex items-center space-x-3 text-xs">
-                    <label class="flex items-center space-x-1.5 cursor-pointer text-slate-400 hover:text-slate-300">
-                        <input type="checkbox" id="autoScrollCheck" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+                    <label class="flex items-center space-x-1.5 cursor-pointer text-muted hover:text-slate-300">
+                        <input type="checkbox" id="autoScrollCheck" checked class="rounded bg-slate-800 border-line accent-[#8b9199] focus:ring-0">
                         <span>Auto-scroll</span>
                     </label>
-                    <button onclick="clearTerminal()" class="text-slate-400 hover:text-slate-200 transition">
+                    <button onclick="clearTerminal()" class="text-muted hover:text-slate-200 transition">
                         <i class="fa-solid fa-trash-can mr-1"></i> Clear
                     </button>
                 </div>
@@ -242,9 +233,9 @@
             <!-- Terminal Body -->
             <div 
                 id="terminalOutput" 
-                class="bg-[#090d16] font-mono text-xs text-slate-300 p-4 h-64 overflow-y-auto leading-relaxed select-text"
+                class="bg-[#08090a] font-mono text-xs text-slate-300 p-4 h-64 overflow-y-auto leading-relaxed select-text"
             >
-                <div class="text-slate-600 italic">Ready. Enter target above and click 'Start Scan' to begin live stream.</div>
+                <div class="text-faint italic">Ready. Enter target above and click 'Start Scan' to begin live stream.</div>
             </div>
         </div>
 
@@ -253,54 +244,54 @@
             
             <!-- Summary Metric Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Target Status</div>
+                <div class="bg-panel border border-line rounded-xl p-4">
+                    <div class="text-xs text-muted uppercase tracking-wider font-semibold">Target Status</div>
                     <div class="mt-1 flex items-center space-x-2">
-                        <span id="metricTargetStatus" class="text-lg font-bold text-white">-</span>
-                        <span id="metricHostStateDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        <span id="metricTargetStatus" class="text-lg font-bold text-ink">-</span>
+                        <span id="metricHostStateDot" class="w-2.5 h-2.5 rounded-full bg-[#6fa87f]"></span>
                     </div>
-                    <div id="metricTargetAddress" class="text-xs text-slate-500 font-mono truncate mt-0.5">-</div>
+                    <div id="metricTargetAddress" class="text-xs text-faint font-mono truncate mt-0.5">-</div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Open Ports</div>
-                    <div id="metricPortCount" class="mt-1 text-2xl font-bold text-indigo-400">0</div>
-                    <div class="text-xs text-slate-500 mt-0.5">Discovered services</div>
+                <div class="bg-panel border border-line rounded-xl p-4">
+                    <div class="text-xs text-muted uppercase tracking-wider font-semibold">Open Ports</div>
+                    <div id="metricPortCount" class="mt-1 text-2xl font-bold text-ink">0</div>
+                    <div class="text-xs text-faint mt-0.5">Discovered services</div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Highest Risk</div>
+                <div class="bg-panel border border-line rounded-xl p-4">
+                    <div class="text-xs text-muted uppercase tracking-wider font-semibold">Highest Risk</div>
                     <div id="metricHighestRisk" class="mt-1 text-lg font-bold text-slate-300">-</div>
-                    <div class="text-xs text-slate-500 mt-0.5">Based on exposed surface</div>
+                    <div class="text-xs text-faint mt-0.5">Based on exposed surface</div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Detected OS</div>
-                    <div id="metricOS" class="mt-1 text-sm font-semibold text-white truncate">-</div>
-                    <div id="metricScanTime" class="text-xs text-slate-500 mt-0.5">Elapsed: 0s</div>
+                <div class="bg-panel border border-line rounded-xl p-4">
+                    <div class="text-xs text-muted uppercase tracking-wider font-semibold">Detected OS</div>
+                    <div id="metricOS" class="mt-1 text-sm font-semibold text-ink truncate">-</div>
+                    <div id="metricScanTime" class="text-xs text-faint mt-0.5">Elapsed: 0s</div>
                 </div>
             </div>
 
             <!-- Ports & Security Risk Intelligence Table -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-                <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div class="bg-panel border border-line rounded-2xl overflow-hidden">
+                <div class="p-4 sm:p-5 border-b border-line flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
-                            <i class="fa-solid fa-shield-halved text-indigo-400"></i>
+                        <h2 class="text-base font-bold text-ink flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-halved text-faint"></i>
                             <span>Discovered Ports & Security Risk Profile</span>
                         </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">
+                        <p class="text-xs text-muted mt-0.5">
                             Port functionality, vulnerability risk classifications, and threat vectors.
                         </p>
                     </div>
 
                     <!-- Risk Filter -->
                     <div class="flex items-center space-x-2 text-xs">
-                        <span class="text-slate-400">Filter Risk:</span>
+                        <span class="text-muted">Filter Risk:</span>
                         <select 
                             id="riskFilter" 
                             onchange="filterPortsByRisk()" 
-                            class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            class="bg-sunken border border-line rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-500/40"
                         >
                             <option value="ALL">All Levels</option>
                             <option value="Critical">Critical</option>
@@ -322,17 +313,17 @@
     </main>
 
     <!-- Modal for Detailed Port Threat Modeling & Hardening -->
-    <div id="exploitModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 max-w-2xl w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-            <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+    <div id="exploitModal" class="fixed inset-0 z-50 hidden bg-black/70 flex items-center justify-center p-4">
+        <div class="bg-panel border border-line max-w-2xl w-full rounded-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-line flex items-center justify-between bg-sunken">
                 <div class="flex items-center space-x-3">
                     <span id="modalRiskBadge" class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider"></span>
                     <div>
-                        <h3 id="modalPortTitle" class="text-base font-bold text-white">Port Analysis</h3>
-                        <p id="modalServiceSubtitle" class="text-xs text-slate-400 font-mono"></p>
+                        <h3 id="modalPortTitle" class="text-base font-bold text-ink">Port Analysis</h3>
+                        <p id="modalServiceSubtitle" class="text-xs text-muted font-mono"></p>
                     </div>
                 </div>
-                <button onclick="closeModal('exploitModal')" class="text-slate-400 hover:text-white transition p-1 text-lg">
+                <button onclick="closeModal('exploitModal')" class="text-muted hover:text-ink transition p-1 text-lg">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -340,20 +331,20 @@
             <div class="p-6 overflow-y-auto space-y-5 text-sm">
                 <!-- Port Purpose -->
                 <div>
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1 flex items-center space-x-1.5">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted mb-1 flex items-center space-x-1.5">
                         <i class="fa-solid fa-circle-nodes"></i>
                         <span>Port Purpose & Standard Usage</span>
                     </h4>
-                    <p id="modalPortUsage" class="text-slate-300 text-xs leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80"></p>
+                    <p id="modalPortUsage" class="text-slate-300 text-xs leading-relaxed bg-sunken/60 p-3 rounded-xl border border-line/80"></p>
                 </div>
 
                 <!-- Threat Vectors: How It Can Be Exploited -->
                 <div>
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-1.5 flex items-center space-x-1.5">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#cf6d6d] mb-1.5 flex items-center space-x-1.5">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         <span>How This Exposed Port Can Be Exploited (Theoretical Attack Vectors)</span>
                     </h4>
-                    <p id="modalRiskExplanation" class="text-xs text-slate-400 mb-2 italic"></p>
+                    <p id="modalRiskExplanation" class="text-xs text-muted mb-2 italic"></p>
                     <ul id="modalExploitVectors" class="space-y-2 text-xs text-slate-300">
                         <!-- List populated via JS -->
                     </ul>
@@ -361,7 +352,7 @@
 
                 <!-- Defensive Remediation & Hardening -->
                 <div>
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center space-x-1.5">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#6fa87f] mb-1.5 flex items-center space-x-1.5">
                         <i class="fa-solid fa-shield-check"></i>
                         <span>Defensive Hardening & Remediation Steps</span>
                     </h4>
@@ -372,16 +363,16 @@
 
                 <!-- NSE Script Output if present -->
                 <div id="modalScriptsContainer" class="hidden">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-1 flex items-center space-x-1.5">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#c09a58] mb-1 flex items-center space-x-1.5">
                         <i class="fa-solid fa-terminal"></i>
                         <span>Nmap NSE Script & Vulnerability Output</span>
                     </h4>
-                    <pre id="modalScriptsOutput" class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-amber-300 whitespace-pre-wrap max-h-40 overflow-y-auto"></pre>
+                    <pre id="modalScriptsOutput" class="bg-sunken p-3 rounded-xl border border-line font-mono text-[11px] text-[#c09a58] whitespace-pre-wrap max-h-40 overflow-y-auto"></pre>
                 </div>
             </div>
 
-            <div class="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
-                <button onclick="closeModal('exploitModal')" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2 rounded-xl transition">
+            <div class="p-4 border-t border-line bg-sunken flex justify-end">
+                <button onclick="closeModal('exploitModal')" class="bg-slate-800 hover:bg-slate-700 text-ink text-xs px-4 py-2 rounded-xl transition">
                     Close
                 </button>
             </div>
@@ -389,22 +380,22 @@
     </div>
 
     <!-- Help / About Modal -->
-    <div id="aboutModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 max-w-lg w-full rounded-2xl shadow-2xl p-6 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i class="fa-solid fa-circle-question text-indigo-400"></i>
+    <div id="aboutModal" class="fixed inset-0 z-50 hidden bg-black/70 flex items-center justify-center p-4">
+        <div class="bg-panel border border-line max-w-lg w-full rounded-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <h3 class="text-base font-bold text-ink flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-question text-faint"></i>
                     <span>About EasyMapper</span>
                 </h3>
-                <button onclick="closeModal('aboutModal')" class="text-slate-400 hover:text-white transition">
+                <button onclick="closeModal('aboutModal')" class="text-muted hover:text-ink transition">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
                 <p><strong>EasyMapper</strong> is a lightweight, containerized WebUI for Nmap with integrated security risk intelligence.</p>
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                <div class="bg-sunken p-3 rounded-xl border border-line space-y-1.5">
                     <p class="font-semibold text-slate-200">Key Features:</p>
-                    <ul class="list-disc list-inside space-y-1 text-slate-400">
+                    <ul class="list-disc list-inside space-y-1 text-muted">
                         <li>Real-time live verbose console streaming via SSE.</li>
                         <li>Configurable scan profiles (Quick, Version, OS detection, Aggressive, Vuln script).</li>
                         <li>Dynamic command builder showing the exact Nmap command used.</li>
@@ -412,10 +403,10 @@
                         <li>Theoretical threat vectors & defensive hardening recommendations.</li>
                     </ul>
                 </div>
-                <p class="text-slate-400 italic">Notice: Only scan networks, domains, and systems you own or have explicit authorization to audit.</p>
+                <p class="text-muted italic">Notice: Only scan networks, domains, and systems you own or have explicit authorization to audit.</p>
             </div>
             <div class="flex justify-end pt-2">
-                <button onclick="closeModal('aboutModal')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-xl transition">
+                <button onclick="closeModal('aboutModal')" class="bg-[#e3e5e8] hover:bg-white text-[#0b0c0e] text-xs font-semibold px-4 py-2 rounded-xl transition">
                     Understood
                 </button>
             </div>
@@ -423,8 +414,8 @@
     </div>
 
     <!-- Footer -->
-    <footer class="border-t border-slate-800/80 py-4 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+    <footer class="border-t border-line/80 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-faint">
             EasyMapper &bull; Dockerized Network Scanner &bull; Authorized Security Auditing
         </div>
     </footer>
@@ -488,7 +479,7 @@
         }
 
         function clearTerminal() {
-            document.getElementById("terminalOutput").innerHTML = '<div class="text-slate-600 italic">Console cleared.</div>';
+            document.getElementById("terminalOutput").innerHTML = '<div class="text-faint italic">Console cleared.</div>';
         }
 
         function appendLog(line) {
@@ -498,13 +489,13 @@
             
             // Highlight common nmap keywords
             if (line.includes("Discovered open port") || line.includes("open")) {
-                el.className += " text-emerald-400 font-semibold";
+                el.className += " text-[#6fa87f] font-semibold";
             } else if (line.toLowerCase().includes("error") || line.toLowerCase().includes("failed")) {
-                el.className += " text-rose-400";
+                el.className += " text-[#cf6d6d]";
             } else if (line.includes("NSE:") || line.includes("Scanning")) {
-                el.className += " text-indigo-300";
+                el.className += " text-muted";
             } else if (line.includes("Initiating") || line.includes("Completed")) {
-                el.className += " text-cyan-300";
+                el.className += " text-slate-400";
             }
 
             el.textContent = line;
@@ -527,19 +518,19 @@
             badge.classList.add("flex");
 
             if (state === "scanning") {
-                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+                dot.className = "w-2 h-2 rounded-full bg-[#c09a58] animate-ping";
                 text.innerText = message || "Scanning...";
                 scanBtn.disabled = true;
                 scanBtnText.innerText = "Scanning...";
                 stopBtn.classList.remove("hidden");
             } else if (state === "finished") {
-                dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                dot.className = "w-2 h-2 rounded-full bg-[#6fa87f]";
                 text.innerText = message || "Finished";
                 scanBtn.disabled = false;
                 scanBtnText.innerText = "Start Scan";
                 stopBtn.classList.add("hidden");
             } else if (state === "error") {
-                dot.className = "w-2 h-2 rounded-full bg-rose-500";
+                dot.className = "w-2 h-2 rounded-full bg-[#c07263]";
                 text.innerText = message || "Error";
                 scanBtn.disabled = false;
                 scanBtnText.innerText = "Start Scan";
@@ -636,13 +627,18 @@
 
             if (!data.hosts || data.hosts.length === 0) {
                 document.getElementById("metricTargetStatus").innerText = "Down / No Response";
-                document.getElementById("metricHostStateDot").className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                document.getElementById("metricHostStateDot").className = "w-2.5 h-2.5 rounded-full bg-[#c07263]";
+                document.getElementById("metricTargetAddress").innerText = data.target || "-";
                 document.getElementById("metricPortCount").innerText = "0";
+                document.getElementById("metricHighestRisk").innerText = "None";
+                document.getElementById("metricHighestRisk").className = "mt-1 text-lg font-bold text-slate-300";
+                document.getElementById("metricOS").innerText = "Not Identified";
+                document.getElementById("metricScanTime").innerText = `Elapsed: ${data.scan_stats ? data.scan_stats.elapsed : "0"}s`;
                 document.getElementById("portsList").innerHTML = `
-                    <div class="text-center py-8 text-slate-400">
-                        <i class="fa-solid fa-circle-exclamation text-3xl text-amber-500 mb-2"></i>
-                        <p class="font-semibold text-white">No active open ports discovered or host is down.</p>
-                        <p class="text-xs text-slate-500 mt-1">If the target blocks ICMP ping requests, try enabling 'Skip Host Ping (-Pn)'.</p>
+                    <div class="text-center py-8 text-muted">
+                        <i class="fa-solid fa-circle-exclamation text-3xl text-[#c09a58] mb-2"></i>
+                        <p class="font-semibold text-ink">No active open ports discovered or host is down.</p>
+                        <p class="text-xs text-faint mt-1">If the target blocks ICMP ping requests, try enabling 'Skip Host Ping (-Pn)'.</p>
                     </div>
                 `;
                 return;
@@ -650,7 +646,7 @@
 
             const host = data.hosts[0];
             document.getElementById("metricTargetStatus").innerText = host.state.toUpperCase();
-            document.getElementById("metricHostStateDot").className = host.state === "up" ? "w-2.5 h-2.5 rounded-full bg-emerald-400" : "w-2.5 h-2.5 rounded-full bg-rose-500";
+            document.getElementById("metricHostStateDot").className = host.state === "up" ? "w-2.5 h-2.5 rounded-full bg-[#6fa87f]" : "w-2.5 h-2.5 rounded-full bg-[#c07263]";
             
             const addr = (host.addresses && host.addresses.length > 0) ? host.addresses[0].addr : data.target;
             const hostname = (host.hostnames && host.hostnames.length > 0) ? `(${host.hostnames[0]})` : "";
@@ -694,23 +690,23 @@
         function getRiskBadge(risk) {
             switch ((risk || "").toLowerCase()) {
                 case "critical":
-                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30">Critical Risk</span>';
+                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-transparent text-[#cf6d6d] border border-[#cf6d6d]/50">Critical Risk</span>';
                 case "high":
-                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-orange-500/10 text-orange-400 border border-orange-500/30">High Risk</span>';
+                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-transparent text-[#c07263] border border-[#c07263]/50">High Risk</span>';
                 case "medium":
-                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">Medium Risk</span>';
+                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-transparent text-[#c09a58] border border-[#c09a58]/50">Medium Risk</span>';
                 case "low":
                 default:
-                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Low Risk</span>';
+                    return '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-transparent text-[#6fa87f] border border-[#6fa87f]/50">Low Risk</span>';
             }
         }
 
         function getRiskTextColor(risk) {
             switch ((risk || "").toLowerCase()) {
-                case "critical": return "text-rose-400";
-                case "high": return "text-orange-400";
-                case "medium": return "text-amber-400";
-                default: return "text-emerald-400";
+                case "critical": return "text-[#cf6d6d]";
+                case "high": return "text-[#c07263]";
+                case "medium": return "text-[#c09a58]";
+                default: return "text-[#6fa87f]";
             }
         }
 
@@ -720,7 +716,7 @@
 
             if (!ports || ports.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-6 text-slate-400 text-xs">
+                    <div class="text-center py-6 text-muted text-xs">
                         No open ports were detected during this scan.
                     </div>
                 `;
@@ -732,22 +728,22 @@
                 const serviceDisplay = [p.product, p.version].filter(Boolean).join(" ") || p.service || "unknown";
 
                 const card = document.createElement("div");
-                card.className = "bg-slate-950/60 border border-slate-800 hover:border-slate-700/80 rounded-xl p-4 transition port-card";
+                card.className = "bg-sunken/60 border border-line hover:border-line/80 rounded-xl p-4 transition port-card";
                 card.dataset.risk = sec.risk || "Low";
 
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center space-x-3">
-                            <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex flex-col items-center justify-center font-mono">
-                                <span class="text-sm font-bold text-white">${p.port}</span>
-                                <span class="text-[10px] text-slate-500 uppercase">${p.protocol}</span>
+                            <div class="w-12 h-12 rounded-xl bg-panel border border-line flex flex-col items-center justify-center font-mono">
+                                <span class="text-sm font-bold text-ink">${p.port}</span>
+                                <span class="text-[10px] text-faint uppercase">${p.protocol}</span>
                             </div>
                             <div>
                                 <div class="flex items-center space-x-2">
-                                    <span class="text-sm font-semibold text-white">${sec.service || p.service}</span>
-                                    <span class="text-xs text-slate-400 font-mono">${serviceDisplay}</span>
+                                    <span class="text-sm font-semibold text-ink">${sec.service || p.service}</span>
+                                    <span class="text-xs text-muted font-mono">${serviceDisplay}</span>
                                 </div>
-                                <p class="text-xs text-slate-400 mt-0.5 line-clamp-1">${sec.description || 'Open port detected on network interface.'}</p>
+                                <p class="text-xs text-muted mt-0.5 line-clamp-1">${sec.description || 'Open port detected on network interface.'}</p>
                             </div>
                         </div>
 
@@ -755,7 +751,7 @@
                             <div>${getRiskBadge(sec.risk)}</div>
                             <button 
                                 onclick="openPortDetails(${idx})" 
-                                class="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-xs px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 font-medium cursor-pointer"
+                                class="bg-transparent hover:bg-slate-800/50 text-slate-300 border border-line text-xs px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 font-medium cursor-pointer"
                             >
                                 <i class="fa-solid fa-shield-virus text-xs"></i>
                                 <span>Exploitation & Risk Info</span>
@@ -806,7 +802,7 @@
             (sec.exploit_vectors || ["Potential service misconfiguration or unpatched version vulnerabilities."]).forEach(v => {
                 const li = document.createElement("li");
                 li.className = "flex items-start space-x-2";
-                li.innerHTML = `<i class="fa-solid fa-angle-right text-rose-400 mt-0.5"></i><span>${v}</span>`;
+                li.innerHTML = `<i class="fa-solid fa-angle-right text-[#cf6d6d] mt-0.5"></i><span>${v}</span>`;
                 vectorsList.appendChild(li);
             });
 
@@ -816,7 +812,7 @@
             (sec.remediation || ["Restrict port access via firewall to authorized IPs."]).forEach(r => {
                 const li = document.createElement("li");
                 li.className = "flex items-start space-x-2";
-                li.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span>${r}</span>`;
+                li.innerHTML = `<i class="fa-solid fa-check text-[#6fa87f] mt-0.5"></i><span>${r}</span>`;
                 remList.appendChild(li);
             });
 
@@ -836,10 +832,10 @@
 
         function getRiskBadgeClass(risk) {
             switch ((risk || "").toLowerCase()) {
-                case "critical": return "bg-rose-500/20 text-rose-400 border border-rose-500/40";
-                case "high": return "bg-orange-500/20 text-orange-400 border border-orange-500/40";
-                case "medium": return "bg-amber-500/20 text-amber-400 border border-amber-500/40";
-                default: return "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+                case "critical": return "bg-transparent text-[#cf6d6d] border border-[#cf6d6d]/50";
+                case "high": return "bg-transparent text-[#c07263] border border-[#c07263]/50";
+                case "medium": return "bg-transparent text-[#c09a58] border border-[#c09a58]/50";
+                default: return "bg-transparent text-[#6fa87f] border border-[#6fa87f]/50";
             }
         }
 
